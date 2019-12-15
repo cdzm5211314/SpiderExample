@@ -7,7 +7,7 @@
 
 from scrapy import signals
 
-
+# 爬虫中间件
 class SpiderexampleSpiderMiddleware(object):
     # Not all methods need to be defined. If a method is not defined,
     # scrapy acts as if the spider middleware does not modify the
@@ -56,6 +56,7 @@ class SpiderexampleSpiderMiddleware(object):
         spider.logger.info('Spider opened: %s' % spider.name)
 
 
+# 下载中间件
 class SpiderexampleDownloaderMiddleware(object):
     # Not all methods need to be defined. If a method is not defined,
     # scrapy acts as if the downloader middleware does not modify the
@@ -101,3 +102,81 @@ class SpiderexampleDownloaderMiddleware(object):
 
     def spider_opened(self, spider):
         spider.logger.info('Spider opened: %s' % spider.name)
+
+
+# 编写User-Agen的DownloaderMiddleware下载中间件
+from fake_useragent import UserAgent
+from random import choice
+# from SpiderExample.settings import USER_AGENTS
+class UserAgentDownloaderMiddleware(object):
+
+    def process_request(self, request, spider):
+
+        # 设置随机的获取User-Agent
+        # request.headers.setdefault(b'User-Agent', UserAgent().chrome) # 随机chrome浏览器任意版本
+        request.headers.setdefault(b'User-Agent', UserAgent().random) # 随机任意浏览器任意版本
+        # request.headers.setdefault(b'User-Agent', choice(USER_AGENTS))
+
+
+# 编写动态代理IP的DownloaderMiddleware下载中间件
+class ProxyDownloaderMiddleware(object):
+
+    def process_request(self, request, spider):
+
+        # 设置动态代理IP
+        # request.meta['proxy'] = "http://ip:port"
+        # request.meta['proxy'] = "http://username:password@ip:port"
+        request.meta['proxy'] = "http://61.153.251.150:22222"
+
+
+# Selenium + Scrapy 结合使用
+from selenium import webdriver
+from scrapy.http import HtmlResponse
+class SeleniumDownloaderMiddleware(object):
+
+    # def __init__(self):
+    #
+    #     # 创建浏览器对象 - chrome浏览器出现问题
+    #     # self.browser = webdriver.Chrome(executable_path="E:\Installation_Tools\Driver\ChromeDriver\chromedriver.exe")
+    #     self.browser = webdriver.Firefox(executable_path="E:\Installation_Tools\Driver\FirefoxDriver\geckodriver.exe")
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        s = cls()
+        crawler.signals.connect(s.spider_opened, signal=signals.spider_opened)
+        return s
+
+    def process_request(self, request, spider):
+
+        url = request.url  # 请求要访问的url链接
+
+        # 每次请求都会去创建一个浏览器对象
+        # browser = webdriver.Firefox(executable_path="E:\Installation_Tools\Driver\FirefoxDriver\geckodriver.exe")
+
+        # 发送请求
+        # self.browser.get(url)
+
+        # 获取响应的内容
+        # html = self.browser.page_source
+
+        spider.browser.get(url)
+        html = spider.browser.page_source
+
+        # print(html)
+
+        # HtmlResponse对象,它是Response的子类,返回之后便顺次调用每个Downloader Middleware的process_response()方法
+        # 而在process_response()中我们没有对其做特殊处理,它会被发送给Spider,传给Request的回调函数进行解析
+        return HtmlResponse(url, body=html, request=request, encoding="utf-8")
+
+    def process_response(self, request, response, spider):
+
+        return response
+
+    def process_exception(self, request, exception, spider):
+
+        pass
+
+    def spider_opened(self, spider):
+        spider.logger.info('Spider opened: %s' % spider.name)
+
+
