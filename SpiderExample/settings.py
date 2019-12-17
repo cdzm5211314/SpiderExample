@@ -38,7 +38,7 @@ ROBOTSTXT_OBEY = False  # 设置成False,是拒绝遵守Robot协议
 # See https://doc.scrapy.org/en/latest/topics/settings.html#download-delay
 # See also autothrottle settings and docs
 # 限制下载频率(秒)
-DOWNLOAD_DELAY = 2
+DOWNLOAD_DELAY = 1
 # The download delay setting will honor only one of:
 #CONCURRENT_REQUESTS_PER_DOMAIN = 16
 #CONCURRENT_REQUESTS_PER_IP = 16
@@ -98,6 +98,7 @@ ITEM_PIPELINES = {
    # 'SpiderExample.pipelines.Cd07zolbizhiPipeline': 300,  # 使用自定义的pipeline下载图片,图片名称自定义
    # 'SpiderExample.pipelines.Cd12doubanmoviePipeline': 300,
    # 'SpiderExample.pipelines.Cd15lianjiaPipeline': 300,
+   'scrapy_redis.pipelines.RedisPipeline' : 300,  # 分布式爬虫配置项
 
 }
 
@@ -154,3 +155,11 @@ ITEM_PIPELINES = {
 # HTTPCACHE_STORAGE = 'scrapy_splash.SplashAwareFSCacheStorage'
 
 
+
+### scrapy-redis分布式爬虫配置:
+# REDIS_URL = 'redis://127.0.0.1:6379/2'
+REDIS_HOST = '127.0.0.1'
+REDIS_PORT = 6379
+SCHEDULER = "scrapy_redis.scheduler.Scheduler"
+DUPEFILTER_CLASS = "scrapy_redis.dupefilter.RFPDupeFilter"
+SCHEDULER_PERSIST = True

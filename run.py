@@ -40,4 +40,6 @@ from scrapy import cmdline
 
 # cmdline.execute(["scrapy", "crawl", "cd_15lianjia"])
 
+# cmdline.execute(["scrapy", "crawl", "cd_16scrapy_redis"])
+
 

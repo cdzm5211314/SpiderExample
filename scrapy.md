@@ -491,4 +491,82 @@ DOWNLOADER_MIDDLEWARES = {
 }
 ```
 
+### Scrapy-Redis分布式爬虫组件:
+> Scrapy是爬虫框架,但是不支持分布式,scrapy-redis是为了实现Scrapy分布式爬取,而提供以redis为基础的组件  
+* scrapy-redis组件的安装: `pip install scrapy-redis`
+* 如何将一个Scrapy项目变成一个scrapy-redis分布式爬虫项目: 如下所示
+* 爬虫类的继承类的修改
+    ```python3
+    基础类: scrapy.Spider 改成 scrapy_redis.spiders.RedisSpider
+    自动类: scrapy.CrawlSpider 改成 scrapy_redis.spiders.RedisCrawlSpider
+    ```
+* 爬虫类的属性删除与添加
+    ```python3
+    # start_urls = []  # 注销或删除
+    redis_key = "xxx:start_urls"  # 添加属性值,代替初始爬取的URL
+    ```
+* settings.py文件中配置如下信息
+    * 必选-指定redis数据库的连接参数
+        ```python3
+        # REDIS_URL = 'redis://127.0.0.1:6379'  
+        REDIS_HOST = '127.0.0.1'
+        REDIS_PORT = 6379
+        ```
+    * 必选-使用了scrapy-redis的调度器,在redis数据库里分配请求
+        ```python3
+        SCHEDULER = "scrapy_redis.scheduler.Scheduler"
+        ```
+    * 必选-使用了scrapy_redis 的去重组件,在redis数据库里做去重
+        ```python3
+        DUPEFILTER_CLASS = "scrapy_redis.dupefilter.RFPDupeFilter"
+        ```
+    * 必选-使用redis开启pipeline
+        ```python3
+        ITEM_PIPELINES = {
+            'scrapy_redis.pipelines.RedisPipeline' : 300
+        }
+        ```
+    * `DUPEFILTER_DEBUG =True`  # 设置为True,记录所有重复的请求,默认情况下RFPDupeFilter只记录第一个重复请求
+    * `SCHEDULER_PERSIST = True`  # 设置为True,爬虫退出时,不清理redis中的数据,暂停后可以继续执行
+    * 指定排序爬取地址时使用的队列
+        ```python3
+        SCHEDULER_QUEUE_CLASS = 'scrapy_redis.queue.SpiderPriorityQueue'  # 默认的,按优先级排序
+        SCHEDULER_QUEUE_CLASS = 'scrapy_redis.queue.SpiderQueue'  # 可选的,按先进先出排序（FIFO）
+        SCHEDULER_QUEUE_CLASS = 'scrapy_redis.queue.SpiderStack'  # 可选的,按后进先出排序（LIFO）
+        ```
+* 启动配置好的分布式爬虫项目:
+    ```python3
+    # 1.在爬虫服务器上,进入到爬虫文件所在目录,然后执行: scrapy runspider [爬虫文件].py
+    # 2.在redis服务器上,推入一个开始的url地址: redis-cli lpush [redis-key] [start_urls链接]
+    
+    ```
+* scrapy-redis键名介绍: key - value
+    * "项目名:start_urls" ---> list类型,用于获取spider启动时爬取的第一个url地址
+    * "项目名:dupefilter" ---> set类型,用于爬虫访问的url去重,内容是url地址的hash值字符串
+    * "项目名:items" ---> list类型,保存爬虫获取到的数据item,内容是json字符串
+    * "项目名:requests" ---> zset类型,用于调度器处理requests,内容是request对象字符串
+
+### 分布式爬虫: 从Redis中取出数据导入到MongoDB
+```python3
+import redis
+import pymongo
+import json
+def main()"
+    # redis连接
+    redis_client = redis.Redis(host="127.0.0.1", port=6379, db=0)
+    # mongodb连接
+    mongo_client = pymongo.MongoClient("localhost",27017)
+    # 获取数据库
+    db = mongo_client.dbname
+    # 获取集合
+    collection = db.jehename
+    while True:
+        # 从redis中取出数据
+        scource, data = redis_cilent.bloop(["cd_17scrapy_redis:items"])
+        # 把Json数据转换为字典类型数据
+        item = json.loads(data)
+        # 插入数据到mongodb中
+        collection.insert(item)
+```
+
 
